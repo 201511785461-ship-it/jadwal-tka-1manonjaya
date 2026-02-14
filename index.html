@@ -20,7 +20,6 @@
     <script type="text/babel">
         const { useState, useMemo, useEffect } = React;
 
-        // Ikon buatan sendiri karena Lucide butuh inisialisasi di HTML biasa
         const Icon = ({ name, size = 20, className = "" }) => {
             useEffect(() => {
                 if (window.lucide) {
@@ -35,8 +34,8 @@
         const GURU_INDO = ["Bu Elis", "Bu Imas", "Bu Nendah", "Bu Noneng", "Bu Hana", "Pa Yadi"];
         const SEMUA_GURU = [...new Set([...GURU_MTK, ...GURU_INDO])].sort();
 
-        const START_DATE = new Date(2026, 1, 23); // 23 Feb 2026
-        const END_DATE = new Date(2026, 2, 15);   // 15 Mar 2026
+        const START_DATE = new Date(2026, 1, 23); 
+        const END_DATE = new Date(2026, 2, 15);   
 
         function App() {
             const [selectedDate, setSelectedDate] = useState(new Date(2026, 1, 23));
@@ -64,16 +63,20 @@
                 const dayIndex = getWorkDayIndex(selectedDate);
                 
                 return NAMA_KELAS.map((kelas, i) => {
-                    const idxMtk = (i - dayIndex) % GURU_MTK.length;
-                    const idxIndo = (i - dayIndex) % GURU_INDO.length;
-                    const mtkIndex = idxMtk < 0 ? idxMtk + GURU_MTK.length : idxMtk;
-                    const indoIndex = idxIndo < 0 ? idxIndo + GURU_INDO.length : idxIndo;
-                    const isMtkFirst = (i + dayIndex) % 2 === 0;
+                    // Logika Rolling Guru
+                    const mtkIdx = (i + dayIndex) % GURU_MTK.length;
+                    const indoIdx = (i + dayIndex) % GURU_INDO.length;
+
+                    // PERBAIKAN BENTROK: 
+                    // Gunakan modulo terhadap total kelas dan sesi agar jika guru yang sama muncul, 
+                    // dia akan berada di sesi yang berbeda.
+                    // Kita buat 6 kelas pertama Sesi 1 MTK, 5 kelas sisanya Sesi 2 MTK.
+                    const isMtkSesi1 = i < 6;
 
                     return {
                         kelas,
-                        sesi1: isMtkFirst ? { nama: GURU_MTK[mtkIndex], mapel: "Matematika" } : { nama: GURU_INDO[indoIndex], mapel: "B. Indonesia" },
-                        sesi2: isMtkFirst ? { nama: GURU_INDO[indoIndex], mapel: "B. Indonesia" } : { nama: GURU_MTK[mtkIndex], mapel: "Matematika" }
+                        sesi1: isMtkSesi1 ? { nama: GURU_MTK[mtkIdx], mapel: "Matematika" } : { nama: GURU_INDO[indoIdx], mapel: "B. Indonesia" },
+                        sesi2: isMtkSesi1 ? { nama: GURU_INDO[indoIdx], mapel: "B. Indonesia" } : { nama: GURU_MTK[mtkIdx], mapel: "Matematika" }
                     };
                 });
             }, [selectedDate]);
@@ -119,16 +122,14 @@
 
                             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                                 <label className="block text-sm font-semibold text-slate-500 mb-3 uppercase tracking-wider">Cari Nama Guru</label>
-                                <div className="relative">
-                                    <select 
-                                        className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none appearance-none"
-                                        value={selectedGuru}
-                                        onChange={(e) => setSelectedGuru(e.target.value)}
-                                    >
-                                        <option value="">--- Semua Guru ---</option>
-                                        {SEMUA_GURU.map(g => <option key={g} value={g}>{g}</option>)}
-                                    </select>
-                                </div>
+                                <select 
+                                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                                    value={selectedGuru}
+                                    onChange={(e) => setSelectedGuru(e.target.value)}
+                                >
+                                    <option value="">--- Semua Guru ---</option>
+                                    {SEMUA_GURU.map(g => <option key={g} value={g}>{g}</option>)}
+                                </select>
                             </div>
                         </div>
 
@@ -165,7 +166,6 @@
                             </div>
                         )}
                         
-                        {/* Agenda Harian Tambahan */}
                         <div className="mt-12 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                             <h3 className="font-bold mb-4 flex items-center gap-2 text-slate-800">
                                 <Icon name="clock" size={20} className="text-indigo-600" /> Agenda Harian Sekolah
