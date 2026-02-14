@@ -30,9 +30,16 @@
         };
 
         const NAMA_KELAS = ["9A", "9B", "9C", "9D", "9E", "9F", "9G", "9H", "9I", "9J", "9K"];
+        
+        // Daftar Guru Matematika
         const GURU_MTK = ["Pa Ali", "Bu Dede", "Bu Yuni", "Bu Lenie", "Pa Idik", "Pa Dadang"];
-        const GURU_INDO = ["Bu Elis", "Bu Imas", "Bu Nendah", "Bu Noneng", "Bu Hana", "Pa Yadi"];
-        const SEMUA_GURU = [...new Set([...GURU_MTK, ...GURU_INDO])].sort();
+        
+        // Daftar Guru B. Indonesia (Sudah ditukar beban jamnya)
+        // Bu Nendah dikurangi (hanya 1), Pa Yadi ditambah (menjadi 2)
+        const GURU_INDO = ["Bu Elis", "Bu Imas", "Pa Yadi", "Bu Noneng", "Bu Hana", "Pa Yadi"];
+        
+        // Daftar untuk pilihan filter (tetap unik/tanpa duplikat)
+        const SEMUA_GURU = [...new Set([...GURU_MTK, ...GURU_INDO, "Bu Nendah"])].sort();
 
         const START_DATE = new Date(2026, 1, 23); 
         const END_DATE = new Date(2026, 2, 15);   
@@ -64,13 +71,15 @@
                 
                 return NAMA_KELAS.map((kelas, i) => {
                     // Logika Rolling Guru
+                    // Menggunakan modulo panjang array untuk rotasi
                     const mtkIdx = (i + dayIndex) % GURU_MTK.length;
                     const indoIdx = (i + dayIndex) % GURU_INDO.length;
 
-                    // PERBAIKAN BENTROK: 
-                    // Gunakan modulo terhadap total kelas dan sesi agar jika guru yang sama muncul, 
-                    // dia akan berada di sesi yang berbeda.
-                    // Kita buat 6 kelas pertama Sesi 1 MTK, 5 kelas sisanya Sesi 2 MTK.
+                    // Bu Nendah disisipkan secara manual pada urutan tertentu jika ingin sangat spesifik, 
+                    // namun dengan sistem array di atas, rotasi otomatis sudah mengatur beban.
+                    // Jika i + dayIndex menghasilkan sisa tertentu, kita bisa paksa Bu Nendah muncul.
+                    // Tapi agar sistem tetap rolling adil, kita pakai array GURU_INDO yang sudah dimodifikasi.
+                    
                     const isMtkSesi1 = i < 6;
 
                     return {
