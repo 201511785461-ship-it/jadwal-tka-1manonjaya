@@ -109,55 +109,89 @@
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                <label className="block text-sm font-semibold text-slate-500 mb-3 uppercase">Pilih Tanggal</label>
+                                <label className="block text-sm font-semibold text-slate-500 mb-3 uppercase tracking-wider">Pilih Tanggal</label>
                                 <div className="flex items-center justify-between gap-4">
-                                    <button onClick={() => changeDate(-1)} className="p-2 hover:bg-slate-100 rounded-full"><Icon name="chevron-left" /></button>
+                                    <button onClick={() => changeDate(-1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><Icon name="chevron-left" /></button>
                                     <div className="text-center font-bold">{formatDate(selectedDate)}</div>
-                                    <button onClick={() => changeDate(1)} className="p-2 hover:bg-slate-100 rounded-full"><Icon name="chevron-right" /></button>
+                                    <button onClick={() => changeDate(1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><Icon name="chevron-right" /></button>
                                 </div>
                             </div>
 
                             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                <label className="block text-sm font-semibold text-slate-500 mb-3 uppercase">Cari Nama Guru</label>
-                                <select 
-                                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none"
-                                    value={selectedGuru}
-                                    onChange={(e) => setSelectedGuru(e.target.value)}
-                                >
-                                    <option value="">--- Semua Guru ---</option>
-                                    {SEMUA_GURU.map(g => <option key={g} value={g}>{g}</option>)}
-                                </select>
+                                <label className="block text-sm font-semibold text-slate-500 mb-3 uppercase tracking-wider">Cari Nama Guru</label>
+                                <div className="relative">
+                                    <select 
+                                        className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none appearance-none"
+                                        value={selectedGuru}
+                                        onChange={(e) => setSelectedGuru(e.target.value)}
+                                    >
+                                        <option value="">--- Semua Guru ---</option>
+                                        {SEMUA_GURU.map(g => <option key={g} value={g}>{g}</option>)}
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
                         {isWeekend(selectedDate) ? (
                             <div className="bg-orange-50 border border-orange-200 p-8 rounded-2xl text-center">
+                                <Icon name="info" size={48} className="mx-auto text-orange-500 mb-4" />
                                 <h2 className="text-xl font-bold text-orange-800">Hari Libur Akhir Pekan</h2>
+                                <p className="text-orange-600">Tidak ada jadwal KBM pada hari Sabtu dan Minggu.</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {filteredJadwal.map((item) => (
-                                    <div key={item.kelas} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                                        <div className="bg-slate-800 text-white px-4 py-2 font-bold italic">Kelas {item.kelas}</div>
-                                        <div className="p-4 space-y-4">
-                                            <div className={`p-3 rounded-xl border-l-4 ${item.sesi1.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
-                                                <div className="text-[10px] font-bold text-slate-400 uppercase">Sesi 1 (09.30)</div>
-                                                <div className="font-bold text-slate-800">{item.sesi1.nama}</div>
-                                                <div className="text-xs text-slate-600">{item.sesi1.mapel}</div>
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {filteredJadwal.map((item) => (
+                                        <div key={item.kelas} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
+                                            <div className="bg-slate-800 text-white px-4 py-2 font-bold italic flex justify-between items-center">
+                                                <span>Kelas {item.kelas}</span>
+                                                <Icon name="map-pin" size={14} className="opacity-50" />
                                             </div>
-                                            <div className={`p-3 rounded-xl border-l-4 ${item.sesi2.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
-                                                <div className="text-[10px] font-bold text-slate-400 uppercase">Sesi 2 (11.00)</div>
-                                                <div className="font-bold text-slate-800">{item.sesi2.nama}</div>
-                                                <div className="text-xs text-slate-600">{item.sesi2.mapel}</div>
+                                            <div className="p-4 space-y-4">
+                                                <div className={`p-3 rounded-xl border-l-4 ${item.sesi1.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
+                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Sesi 1 (09.30 - 10.30)</div>
+                                                    <div className="font-bold text-slate-800">{item.sesi1.nama}</div>
+                                                    <div className="text-xs text-slate-600">{item.sesi1.mapel}</div>
+                                                </div>
+                                                <div className={`p-3 rounded-xl border-l-4 ${item.sesi2.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
+                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Sesi 2 (11.00 - 12.00)</div>
+                                                    <div className="font-bold text-slate-800">{item.sesi2.nama}</div>
+                                                    <div className="text-xs text-slate-600">{item.sesi2.mapel}</div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         )}
                         
-                        <div className="mt-8 bg-white p-4 rounded-xl border border-slate-200 text-xs text-center text-slate-500 italic">
-                            Aplikasi Jadwal Rolling Guru TKA - SMP Manonjaya 2026
+                        {/* Agenda Harian Tambahan */}
+                        <div className="mt-12 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                            <h3 className="font-bold mb-4 flex items-center gap-2 text-slate-800">
+                                <Icon name="clock" size={20} className="text-indigo-600" /> Agenda Harian Sekolah
+                            </h3>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">08.00 - 09.00</div>
+                                    <div className="font-semibold text-xs text-slate-700">Duha & Pesantren</div>
+                                </div>
+                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">09.00 - 09.30</div>
+                                    <div className="font-semibold text-xs text-slate-700">Istirahat I</div>
+                                </div>
+                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">10.30 - 11.00</div>
+                                    <div className="font-semibold text-xs text-slate-700">Istirahat II</div>
+                                </div>
+                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">12.00 - Selesai</div>
+                                    <div className="font-semibold text-xs text-slate-700">Dzuhur Berjamaah</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-8 py-4 text-[10px] text-center text-slate-400 border-t border-slate-100">
+                            Aplikasi Jadwal Rolling Guru TKA - SMP Manonjaya © 2026
                         </div>
                     </div>
                 </div>
