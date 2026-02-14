@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadwal TKA SMP Manonjaya</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+
+        // Ikon buatan sendiri karena Lucide butuh inisialisasi di HTML biasa
+        const Icon = ({ name, size = 20, className = "" }) => {
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [name]);
+            return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
+        };
+
+        const NAMA_KELAS = ["9A", "9B", "9C", "9D", "9E", "9F", "9G", "9H", "9I", "9J", "9K"];
+        const GURU_MTK = ["Pa Ali", "Bu Dede", "Bu Yuni", "Bu Lenie", "Pa Idik", "Pa Dadang"];
+        const GURU_INDO = ["Bu Elis", "Bu Imas", "Bu Nendah", "Bu Noneng", "Bu Hana", "Pa Yadi"];
+        const SEMUA_GURU = [...new Set([...GURU_MTK, ...GURU_INDO])].sort();
+
+        const START_DATE = new Date(2026, 1, 23); // 23 Feb 2026
+        const END_DATE = new Date(2026, 2, 15);   // 15 Mar 2026
+
+        function App() {
+            const [selectedDate, setSelectedDate] = useState(new Date(2026, 1, 23));
+            const [selectedGuru, setSelectedGuru] = useState("");
+
+            const getWorkDayIndex = (targetDate) => {
+                let count = 0;
+                let current = new Date(START_DATE);
+                while (current < targetDate) {
+                    if (current.getDay() !== 0 && current.getDay() !== 6) {
+                        count++;
+                    }
+                    current.setDate(current.getDate() + 1);
+                }
+                return count;
+            };
+
+            const isWeekend = (date) => {
+                const day = date.getDay();
+                return day === 0 || day === 6;
+            };
+
+            const jadwalHariIni = useMemo(() => {
+                if (isWeekend(selectedDate)) return [];
+                const dayIndex = getWorkDayIndex(selectedDate);
+                
+                return NAMA_KELAS.map((kelas, i) => {
+                    const idxMtk = (i - dayIndex) % GURU_MTK.length;
+                    const idxIndo = (i - dayIndex) % GURU_INDO.length;
+                    const mtkIndex = idxMtk < 0 ? idxMtk + GURU_MTK.length : idxMtk;
+                    const indoIndex = idxIndo < 0 ? idxIndo + GURU_INDO.length : idxIndo;
+                    const isMtkFirst = (i + dayIndex) % 2 === 0;
+
+                    return {
+                        kelas,
+                        sesi1: isMtkFirst ? { nama: GURU_MTK[mtkIndex], mapel: "Matematika" } : { nama: GURU_INDO[indoIndex], mapel: "B. Indonesia" },
+                        sesi2: isMtkFirst ? { nama: GURU_INDO[indoIndex], mapel: "B. Indonesia" } : { nama: GURU_MTK[mtkIndex], mapel: "Matematika" }
+                    };
+                });
+            }, [selectedDate]);
+
+            const filteredJadwal = useMemo(() => {
+                if (!selectedGuru) return jadwalHariIni;
+                return jadwalHariIni.filter(item => 
+                    item.sesi1.nama === selectedGuru || item.sesi2.nama === selectedGuru
+                );
+            }, [selectedGuru, jadwalHariIni]);
+
+            const formatDate = (date) => {
+                return date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            };
+
+            const changeDate = (days) => {
+                const newDate = new Date(selectedDate);
+                newDate.setDate(newDate.getDate() + days);
+                if (newDate >= START_DATE && newDate <= END_DATE) {
+                    setSelectedDate(newDate);
+                }
+            };
+
+            return (
+                <div className="min-h-screen p-4 md:p-8">
+                    <div className="max-w-5xl mx-auto">
+                        <div className="bg-indigo-700 rounded-2xl p-6 shadow-xl mb-8 text-white">
+                            <h1 className="text-2xl md:text-3xl font-bold">Jadwal TKA SMP Manonjaya</h1>
+                            <p className="opacity-90 flex items-center gap-2 mt-2">
+                                <Icon name="calendar" size={18} /> Periode: 23 Februari – 15 Maret 2026
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                <label className="block text-sm font-semibold text-slate-500 mb-3 uppercase">Pilih Tanggal</label>
+                                <div className="flex items-center justify-between gap-4">
+                                    <button onClick={() => changeDate(-1)} className="p-2 hover:bg-slate-100 rounded-full"><Icon name="chevron-left" /></button>
+                                    <div className="text-center font-bold">{formatDate(selectedDate)}</div>
+                                    <button onClick={() => changeDate(1)} className="p-2 hover:bg-slate-100 rounded-full"><Icon name="chevron-right" /></button>
+                                </div>
+                            </div>
+
+                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                <label className="block text-sm font-semibold text-slate-500 mb-3 uppercase">Cari Nama Guru</label>
+                                <select 
+                                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                                    value={selectedGuru}
+                                    onChange={(e) => setSelectedGuru(e.target.value)}
+                                >
+                                    <option value="">--- Semua Guru ---</option>
+                                    {SEMUA_GURU.map(g => <option key={g} value={g}>{g}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        {isWeekend(selectedDate) ? (
+                            <div className="bg-orange-50 border border-orange-200 p-8 rounded-2xl text-center">
+                                <h2 className="text-xl font-bold text-orange-800">Hari Libur Akhir Pekan</h2>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {filteredJadwal.map((item) => (
+                                    <div key={item.kelas} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                        <div className="bg-slate-800 text-white px-4 py-2 font-bold italic">Kelas {item.kelas}</div>
+                                        <div className="p-4 space-y-4">
+                                            <div className={`p-3 rounded-xl border-l-4 ${item.sesi1.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
+                                                <div className="text-[10px] font-bold text-slate-400 uppercase">Sesi 1 (09.30)</div>
+                                                <div className="font-bold text-slate-800">{item.sesi1.nama}</div>
+                                                <div className="text-xs text-slate-600">{item.sesi1.mapel}</div>
+                                            </div>
+                                            <div className={`p-3 rounded-xl border-l-4 ${item.sesi2.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
+                                                <div className="text-[10px] font-bold text-slate-400 uppercase">Sesi 2 (11.00)</div>
+                                                <div className="font-bold text-slate-800">{item.sesi2.nama}</div>
+                                                <div className="text-xs text-slate-600">{item.sesi2.mapel}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        
+                        <div className="mt-8 bg-white p-4 rounded-xl border border-slate-200 text-xs text-center text-slate-500 italic">
+                            Aplikasi Jadwal Rolling Guru TKA - SMP Manonjaya 2026
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
