@@ -8,7 +8,6 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -18,29 +17,42 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useMemo, useEffect } = React;
+        const { useState, useMemo } = React;
 
         const Icon = ({ name, size = 20, className = "" }) => {
-            useEffect(() => {
-                if (window.lucide) {
-                    window.lucide.createIcons();
-                }
-            }, [name]);
-            return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
+            const icons = {
+                calendar: <path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />,
+                "chevron-left": <path d="m15 18-6-6 6-6" />,
+                "chevron-right": <path d="m9 18 6-6-6-6" />,
+                "map-pin": (
+                    <React.Fragment>
+                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </React.Fragment>
+                ),
+                clock: (
+                    <React.Fragment>
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14" />
+                    </React.Fragment>
+                )
+            };
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {icons[name] || null}
+                </svg>
+            );
         };
 
         const NAMA_KELAS = ["9A", "9B", "9C", "9D", "9E", "9F", "9G", "9H", "9I", "9J", "9K"];
         
-        // Daftar Guru Matematika
+        // Daftar Guru Matematika (6 orang)
         const GURU_MTK = ["Pa Ali", "Bu Dede", "Bu Yuni", "Bu Lenie", "Pa Idik", "Pa Dadang"];
         
-        // Daftar Guru B. Indonesia (Sudah ditukar beban jamnya)
-        // Bu Nendah dikurangi (hanya 1), Pa Yadi ditambah (menjadi 2)
-        const GURU_INDO = ["Bu Elis", "Bu Imas", "Pa Yadi", "Bu Noneng", "Bu Hana", "Pa Yadi"];
+        // Daftar Guru Bahasa Indonesia (6 orang - Update: Bu Noneng ditambahkan)
+        const GURU_INDO = ["Bu Elis", "Bu Imas", "Bu Nendah", "Bu Noneng", "Bu Hana", "Pa Yadi"];
         
-        // Daftar untuk pilihan filter (tetap unik/tanpa duplikat)
-        const SEMUA_GURU = [...new Set([...GURU_MTK, ...GURU_INDO, "Bu Nendah"])].sort();
-
+        const SEMUA_GURU = [...new Set([...GURU_MTK, ...GURU_INDO])].sort();
         const START_DATE = new Date(2026, 1, 23); 
         const END_DATE = new Date(2026, 2, 15);   
 
@@ -52,40 +64,32 @@
                 let count = 0;
                 let current = new Date(START_DATE);
                 while (current < targetDate) {
-                    if (current.getDay() !== 0 && current.getDay() !== 6) {
-                        count++;
-                    }
+                    if (current.getDay() !== 0 && current.getDay() !== 6) count++;
                     current.setDate(current.getDate() + 1);
                 }
                 return count;
             };
 
-            const isWeekend = (date) => {
-                const day = date.getDay();
-                return day === 0 || day === 6;
-            };
-
             const jadwalHariIni = useMemo(() => {
-                if (isWeekend(selectedDate)) return [];
-                const dayIndex = getWorkDayIndex(selectedDate);
+                const dayOffset = getWorkDayIndex(selectedDate);
                 
                 return NAMA_KELAS.map((kelas, i) => {
-                    // Logika Rolling Guru
-                    // Menggunakan modulo panjang array untuk rotasi
-                    const mtkIdx = (i + dayIndex) % GURU_MTK.length;
-                    const indoIdx = (i + dayIndex) % GURU_INDO.length;
+                    // Penentuan Sesi: 9A-9F mulai MTK, 9G-9K mulai Indo
+                    // Menggunakan pembagian tetap kelompok kelas agar rotasi guru lebih aman
+                    const startsWithMtk = i < 6;
 
-                    // Bu Nendah disisipkan secara manual pada urutan tertentu jika ingin sangat spesifik, 
-                    // namun dengan sistem array di atas, rotasi otomatis sudah mengatur beban.
-                    // Jika i + dayIndex menghasilkan sisa tertentu, kita bisa paksa Bu Nendah muncul.
-                    // Tapi agar sistem tetap rolling adil, kita pakai array GURU_INDO yang sudah dimodifikasi.
-                    
-                    const isMtkSesi1 = i < 6;
+                    // Indeks guru berputar berdasarkan hari kerja dan index kelas
+                    // Karena jumlah kelas (11) < total guru (12), dijamin tidak ada bentrok
+                    const mtkIdx = (i + dayOffset) % GURU_MTK.length;
+                    const indoIdx = (i + dayOffset) % GURU_INDO.length;
+
+                    const mtkObj = { nama: GURU_MTK[mtkIdx], mapel: "Matematika" };
+                    const indoObj = { nama: GURU_INDO[indoIdx], mapel: "B. Indonesia" };
 
                     return {
                         kelas,
-                        sesi1: isMtkSesi1 ? { nama: GURU_MTK[mtkIdx], mapel: "Matematika" } : { nama: GURU_INDO[indoIdx], mapel: "B. Indonesia" },
-                        sesi2: isMtkSesi1 ? { nama: GURU_INDO[indoIdx], mapel: "B. Indonesia" } : { nama: GURU_MTK[mtkIdx], mapel: "Matematika" }
+                        sesi1: startsWithMtk ? mtkObj : indoObj,
+                        sesi2: startsWithMtk ? indoObj : mtkObj
                     };
                 });
             }, [selectedDate]);
@@ -101,107 +105,116 @@
                 return date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
             };
 
-            const changeDate = (days) => {
-                const newDate = new Date(selectedDate);
-                newDate.setDate(newDate.getDate() + days);
-                if (newDate >= START_DATE && newDate <= END_DATE) {
-                    setSelectedDate(newDate);
+            const changeDate = (direction) => {
+                let newDate = new Date(selectedDate);
+                let found = false;
+                while (!found) {
+                    newDate.setDate(newDate.getDate() + direction);
+                    if (newDate < START_DATE || newDate > END_DATE) return;
+                    if (newDate.getDay() !== 0 && newDate.getDay() !== 6) found = true;
                 }
+                setSelectedDate(newDate);
             };
 
             return (
-                <div className="min-h-screen p-4 md:p-8">
+                <div className="min-h-screen p-4 md:p-8 bg-slate-50 text-slate-900 font-sans">
                     <div className="max-w-5xl mx-auto">
-                        <div className="bg-indigo-700 rounded-2xl p-6 shadow-xl mb-8 text-white">
-                            <h1 className="text-2xl md:text-3xl font-bold">Jadwal TKA SMP Manonjaya</h1>
-                            <p className="opacity-90 flex items-center gap-2 mt-2">
-                                <Icon name="calendar" size={18} /> Periode: 23 Februari – 15 Maret 2026
-                            </p>
+                        <div className="bg-indigo-700 rounded-3xl p-8 shadow-2xl mb-8 text-white relative overflow-hidden">
+                            <div className="relative z-10">
+                                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Jadwal TKA</h1>
+                                <p className="text-indigo-100 mt-2 flex items-center gap-2 font-medium">
+                                    <Icon name="calendar" size={18} /> SMP Manonjaya • 2026
+                                </p>
+                            </div>
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <Icon name="calendar" size={120} />
+                            </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
                             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                <label className="block text-sm font-semibold text-slate-500 mb-3 uppercase tracking-wider">Pilih Tanggal</label>
-                                <div className="flex items-center justify-between gap-4">
-                                    <button onClick={() => changeDate(-1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><Icon name="chevron-left" /></button>
-                                    <div className="text-center font-bold">{formatDate(selectedDate)}</div>
-                                    <button onClick={() => changeDate(1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><Icon name="chevron-right" /></button>
+                                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-4 text-center">Navigasi Hari Kerja</span>
+                                <div className="flex items-center justify-between bg-slate-50 rounded-xl p-2 border border-slate-100">
+                                    <button onClick={() => changeDate(-1)} className="p-3 bg-white shadow-sm hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-all active:scale-95">
+                                        <Icon name="chevron-left" />
+                                    </button>
+                                    <div className="text-center">
+                                        <div className="font-bold text-slate-800">{formatDate(selectedDate)}</div>
+                                        <div className="text-[10px] text-indigo-500 font-bold uppercase">Senin - Jumat Saja</div>
+                                    </div>
+                                    <button onClick={() => changeDate(1)} className="p-3 bg-white shadow-sm hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-all active:scale-95">
+                                        <Icon name="chevron-right" />
+                                    </button>
                                 </div>
                             </div>
 
                             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                <label className="block text-sm font-semibold text-slate-500 mb-3 uppercase tracking-wider">Cari Nama Guru</label>
+                                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-4 text-center">Filter Berdasarkan Guru</span>
                                 <select 
-                                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none text-slate-800 font-bold focus:ring-2 focus:ring-indigo-500 transition-all appearance-none cursor-pointer"
                                     value={selectedGuru}
                                     onChange={(e) => setSelectedGuru(e.target.value)}
                                 >
-                                    <option value="">--- Semua Guru ---</option>
+                                    <option value="">Semua Guru Mengajar</option>
                                     {SEMUA_GURU.map(g => <option key={g} value={g}>{g}</option>)}
                                 </select>
                             </div>
                         </div>
 
-                        {isWeekend(selectedDate) ? (
-                            <div className="bg-orange-50 border border-orange-200 p-8 rounded-2xl text-center">
-                                <Icon name="info" size={48} className="mx-auto text-orange-500 mb-4" />
-                                <h2 className="text-xl font-bold text-orange-800">Hari Libur Akhir Pekan</h2>
-                                <p className="text-orange-600">Tidak ada jadwal KBM pada hari Sabtu dan Minggu.</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-6">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {filteredJadwal.map((item) => (
-                                        <div key={item.kelas} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
-                                            <div className="bg-slate-800 text-white px-4 py-2 font-bold italic flex justify-between items-center">
-                                                <span>Kelas {item.kelas}</span>
-                                                <Icon name="map-pin" size={14} className="opacity-50" />
-                                            </div>
-                                            <div className="p-4 space-y-4">
-                                                <div className={`p-3 rounded-xl border-l-4 ${item.sesi1.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
-                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Sesi 1 (09.30 - 10.30)</div>
-                                                    <div className="font-bold text-slate-800">{item.sesi1.nama}</div>
-                                                    <div className="text-xs text-slate-600">{item.sesi1.mapel}</div>
-                                                </div>
-                                                <div className={`p-3 rounded-xl border-l-4 ${item.sesi2.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
-                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Sesi 2 (11.00 - 12.00)</div>
-                                                    <div className="font-bold text-slate-800">{item.sesi2.nama}</div>
-                                                    <div className="text-xs text-slate-600">{item.sesi2.mapel}</div>
-                                                </div>
-                                            </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredJadwal.map((item) => (
+                                <div key={`${selectedDate.getTime()}-${item.kelas}`} className="group bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden hover:border-indigo-300 hover:shadow-xl transition-all duration-300">
+                                    <div className="bg-slate-900 text-white px-6 py-3 flex justify-between items-center">
+                                        <span className="font-black italic tracking-tighter text-lg">KELAS {item.kelas}</span>
+                                        <div className="bg-indigo-500/20 text-indigo-300 p-1 rounded-md">
+                                            <Icon name="map-pin" size={14} />
                                         </div>
-                                    ))}
+                                    </div>
+                                    
+                                    <div className="p-6 space-y-4">
+                                        <div className={`relative p-4 rounded-2xl border-l-4 transition-all ${item.sesi1.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
+                                            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">SESI 1 • 09:30</div>
+                                            <div className="font-extrabold text-slate-800 text-base">{item.sesi1.nama}</div>
+                                            <div className="text-xs font-medium text-slate-500 italic">{item.sesi1.mapel}</div>
+                                        </div>
+
+                                        <div className="flex justify-center -my-2 opacity-20">
+                                            <div className="h-4 w-[2px] bg-slate-300"></div>
+                                        </div>
+
+                                        <div className={`relative p-4 rounded-2xl border-l-4 transition-all ${item.sesi2.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
+                                            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">SESI 2 • 11:00</div>
+                                            <div className="font-extrabold text-slate-800 text-base">{item.sesi2.nama}</div>
+                                            <div className="text-xs font-medium text-slate-500 italic">{item.sesi2.mapel}</div>
+                                        </div>
+                                    </div>
                                 </div>
+                            ))}
+                        </div>
+
+                        <div className="mt-12 bg-slate-900 rounded-3xl p-8 text-white shadow-inner">
+                            <div className="flex items-center gap-3 mb-6">
+                                <Icon name="clock" className="text-indigo-400" />
+                                <h3 className="font-bold text-lg tracking-tight">Agenda Harian Sekolah</h3>
                             </div>
-                        )}
-                        
-                        <div className="mt-12 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                            <h3 className="font-bold mb-4 flex items-center gap-2 text-slate-800">
-                                <Icon name="clock" size={20} className="text-indigo-600" /> Agenda Harian Sekolah
-                            </h3>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                    <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">08.00 - 09.00</div>
-                                    <div className="font-semibold text-xs text-slate-700">Duha & Pesantren</div>
-                                </div>
-                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                    <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">09.00 - 09.30</div>
-                                    <div className="font-semibold text-xs text-slate-700">Istirahat I</div>
-                                </div>
-                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                    <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">10.30 - 11.00</div>
-                                    <div className="font-semibold text-xs text-slate-700">Istirahat II</div>
-                                </div>
-                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                    <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">12.00 - Selesai</div>
-                                    <div className="font-semibold text-xs text-slate-700">Dzuhur Berjamaah</div>
-                                </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {[
+                                    { t: "08.00 - 09.00", e: "Duha & Pesantren" },
+                                    { t: "09.00 - 09.30", e: "Istirahat I" },
+                                    { t: "10.30 - 11.00", e: "Istirahat II" },
+                                    { t: "12.00 - Selesai", e: "Dzuhur Berjamaah" }
+                                ].map((item, idx) => (
+                                    <div key={idx} className="bg-white/5 border border-white/10 p-4 rounded-2xl">
+                                        <div className="text-[10px] font-black text-indigo-400 uppercase mb-1">{item.t}</div>
+                                        <div className="text-xs font-bold">{item.e}</div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
-                        <div className="mt-8 py-4 text-[10px] text-center text-slate-400 border-t border-slate-100">
-                            Aplikasi Jadwal Rolling Guru TKA - SMP Manonjaya © 2026
-                        </div>
+                        <p className="text-center text-slate-400 text-[10px] mt-8 font-medium uppercase tracking-widest">
+                            Sistem Penjadwalan Otomatis v2.3 • SMP Manonjaya
+                        </p>
                     </div>
                 </div>
             );
