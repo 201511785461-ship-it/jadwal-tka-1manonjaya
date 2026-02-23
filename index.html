@@ -45,16 +45,14 @@
         };
 
         const NAMA_KELAS = ["9A", "9B", "9C", "9D", "9E", "9F", "9G", "9H", "9I", "9J", "9K"];
-        
-        // Daftar Guru Matematika (6 orang)
         const GURU_MTK = ["Pa Ali", "Bu Dede", "Bu Yuni", "Bu Lenie", "Pa Idik", "Pa Dadang"];
-        
-        // Daftar Guru Bahasa Indonesia (6 orang - Update: Bu Noneng ditambahkan)
         const GURU_INDO = ["Bu Elis", "Bu Imas", "Bu Nendah", "Bu Noneng", "Bu Hana", "Pa Yadi"];
         
         const SEMUA_GURU = [...new Set([...GURU_MTK, ...GURU_INDO])].sort();
-        const START_DATE = new Date(2026, 1, 23); 
-        const END_DATE = new Date(2026, 2, 15);   
+        
+        // Batasan Tanggal Sesuai Request
+        const START_DATE = new Date(2026, 1, 23); // 23 Feb 2026
+        const END_DATE = new Date(2026, 2, 12);   // 12 Maret 2026
 
         function App() {
             const [selectedDate, setSelectedDate] = useState(new Date(2026, 1, 23));
@@ -64,7 +62,10 @@
                 let count = 0;
                 let current = new Date(START_DATE);
                 while (current < targetDate) {
-                    if (current.getDay() !== 0 && current.getDay() !== 6) count++;
+                    const day = current.getDay();
+                    if (day !== 0 && day !== 6 && day !== 5) {
+                        count++;
+                    }
                     current.setDate(current.getDate() + 1);
                 }
                 return count;
@@ -74,12 +75,7 @@
                 const dayOffset = getWorkDayIndex(selectedDate);
                 
                 return NAMA_KELAS.map((kelas, i) => {
-                    // Penentuan Sesi: 9A-9F mulai MTK, 9G-9K mulai Indo
-                    // Menggunakan pembagian tetap kelompok kelas agar rotasi guru lebih aman
                     const startsWithMtk = i < 6;
-
-                    // Indeks guru berputar berdasarkan hari kerja dan index kelas
-                    // Karena jumlah kelas (11) < total guru (12), dijamin tidak ada bentrok
                     const mtkIdx = (i + dayOffset) % GURU_MTK.length;
                     const indoIdx = (i + dayOffset) % GURU_INDO.length;
 
@@ -110,8 +106,14 @@
                 let found = false;
                 while (!found) {
                     newDate.setDate(newDate.getDate() + direction);
+                    
+                    // Cek batasan START_DATE dan END_DATE
                     if (newDate < START_DATE || newDate > END_DATE) return;
-                    if (newDate.getDay() !== 0 && newDate.getDay() !== 6) found = true;
+                    
+                    const day = newDate.getDay();
+                    if (day !== 0 && day !== 5 && day !== 6) {
+                        found = true;
+                    }
                 }
                 setSelectedDate(newDate);
             };
@@ -123,7 +125,7 @@
                             <div className="relative z-10">
                                 <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Jadwal TKA</h1>
                                 <p className="text-indigo-100 mt-2 flex items-center gap-2 font-medium">
-                                    <Icon name="calendar" size={18} /> SMP Manonjaya • 2026
+                                    <Icon name="calendar" size={18} /> SMP Manonjaya • TA 2025/2026
                                 </p>
                             </div>
                             <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -135,61 +137,83 @@
                             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-4 text-center">Navigasi Hari Kerja</span>
                                 <div className="flex items-center justify-between bg-slate-50 rounded-xl p-2 border border-slate-100">
-                                    <button onClick={() => changeDate(-1)} className="p-3 bg-white shadow-sm hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-all active:scale-95">
+                                    <button 
+                                        onClick={() => changeDate(-1)} 
+                                        disabled={selectedDate <= START_DATE}
+                                        className={`p-3 bg-white shadow-sm rounded-lg transition-all active:scale-95 ${selectedDate <= START_DATE ? 'opacity-30 cursor-not-allowed' : 'hover:bg-indigo-50 hover:text-indigo-600'}`}
+                                    >
                                         <Icon name="chevron-left" />
                                     </button>
                                     <div className="text-center">
                                         <div className="font-bold text-slate-800">{formatDate(selectedDate)}</div>
-                                        <div className="text-[10px] text-indigo-500 font-bold uppercase">Senin - Jumat Saja</div>
+                                        <div className="text-[10px] text-indigo-500 font-bold uppercase tracking-tight">Senin - Kamis Saja</div>
                                     </div>
-                                    <button onClick={() => changeDate(1)} className="p-3 bg-white shadow-sm hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-all active:scale-95">
+                                    <button 
+                                        onClick={() => changeDate(1)} 
+                                        disabled={selectedDate >= END_DATE}
+                                        className={`p-3 bg-white shadow-sm rounded-lg transition-all active:scale-95 ${selectedDate >= END_DATE ? 'opacity-30 cursor-not-allowed' : 'hover:bg-indigo-50 hover:text-indigo-600'}`}
+                                    >
                                         <Icon name="chevron-right" />
                                     </button>
+                                </div>
+                                <div className="mt-3 text-center">
+                                    <span className="text-[9px] text-slate-400 font-medium italic">Batas: 23 Feb - 12 Mar 2026</span>
                                 </div>
                             </div>
 
                             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-4 text-center">Filter Berdasarkan Guru</span>
-                                <select 
-                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none text-slate-800 font-bold focus:ring-2 focus:ring-indigo-500 transition-all appearance-none cursor-pointer"
-                                    value={selectedGuru}
-                                    onChange={(e) => setSelectedGuru(e.target.value)}
-                                >
-                                    <option value="">Semua Guru Mengajar</option>
-                                    {SEMUA_GURU.map(g => <option key={g} value={g}>{g}</option>)}
-                                </select>
+                                <div className="relative">
+                                    <select 
+                                        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none text-slate-800 font-bold focus:ring-2 focus:ring-indigo-500 transition-all appearance-none cursor-pointer"
+                                        value={selectedGuru}
+                                        onChange={(e) => setSelectedGuru(e.target.value)}
+                                    >
+                                        <option value="">Semua Guru Mengajar</option>
+                                        {SEMUA_GURU.map(g => <option key={g} value={g}>{g}</option>)}
+                                    </select>
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                        <Icon name="chevron-right" className="rotate-90" size={16} />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredJadwal.map((item) => (
-                                <div key={`${selectedDate.getTime()}-${item.kelas}`} className="group bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden hover:border-indigo-300 hover:shadow-xl transition-all duration-300">
-                                    <div className="bg-slate-900 text-white px-6 py-3 flex justify-between items-center">
-                                        <span className="font-black italic tracking-tighter text-lg">KELAS {item.kelas}</span>
-                                        <div className="bg-indigo-500/20 text-indigo-300 p-1 rounded-md">
-                                            <Icon name="map-pin" size={14} />
+                            {filteredJadwal.length > 0 ? (
+                                filteredJadwal.map((item) => (
+                                    <div key={`${selectedDate.getTime()}-${item.kelas}`} className="group bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden hover:border-indigo-300 hover:shadow-xl transition-all duration-300">
+                                        <div className="bg-slate-900 text-white px-6 py-3 flex justify-between items-center">
+                                            <span className="font-black italic tracking-tighter text-lg uppercase">Kelas {item.kelas}</span>
+                                            <div className="bg-indigo-500/20 text-indigo-300 p-1 rounded-md">
+                                                <Icon name="map-pin" size={14} />
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="p-6 space-y-4">
+                                            <div className={`relative p-4 rounded-2xl border-l-4 transition-all ${item.sesi1.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
+                                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Sesi 1 • 09:30</div>
+                                                <div className="font-extrabold text-slate-800 text-base">{item.sesi1.nama}</div>
+                                                <div className="text-xs font-medium text-slate-500 italic">{item.sesi1.mapel}</div>
+                                            </div>
+
+                                            <div className="flex justify-center -my-2 opacity-20">
+                                                <div className="h-4 w-[2px] bg-slate-300"></div>
+                                            </div>
+
+                                            <div className={`relative p-4 rounded-2xl border-l-4 transition-all ${item.sesi2.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
+                                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Sesi 2 • 11:00</div>
+                                                <div className="font-extrabold text-slate-800 text-base">{item.sesi2.nama}</div>
+                                                <div className="text-xs font-medium text-slate-500 italic">{item.sesi2.mapel}</div>
+                                            </div>
                                         </div>
                                     </div>
-                                    
-                                    <div className="p-6 space-y-4">
-                                        <div className={`relative p-4 rounded-2xl border-l-4 transition-all ${item.sesi1.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
-                                            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">SESI 1 • 09:30</div>
-                                            <div className="font-extrabold text-slate-800 text-base">{item.sesi1.nama}</div>
-                                            <div className="text-xs font-medium text-slate-500 italic">{item.sesi1.mapel}</div>
-                                        </div>
-
-                                        <div className="flex justify-center -my-2 opacity-20">
-                                            <div className="h-4 w-[2px] bg-slate-300"></div>
-                                        </div>
-
-                                        <div className={`relative p-4 rounded-2xl border-l-4 transition-all ${item.sesi2.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
-                                            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">SESI 2 • 11:00</div>
-                                            <div className="font-extrabold text-slate-800 text-base">{item.sesi2.nama}</div>
-                                            <div className="text-xs font-medium text-slate-500 italic">{item.sesi2.mapel}</div>
-                                        </div>
-                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-slate-300">
+                                    <p className="text-slate-400 font-medium">Tidak ada jadwal ditemukan untuk filter ini.</p>
                                 </div>
-                            ))}
+                            )}
                         </div>
 
                         <div className="mt-12 bg-slate-900 rounded-3xl p-8 text-white shadow-inner">
@@ -213,7 +237,7 @@
                         </div>
 
                         <p className="text-center text-slate-400 text-[10px] mt-8 font-medium uppercase tracking-widest">
-                            Sistem Penjadwalan Otomatis v2.3 • SMP Manonjaya
+                            Sistem Penjadwalan Otomatis v2.6 • Batas: 12 Maret 2026
                         </p>
                     </div>
                 </div>
