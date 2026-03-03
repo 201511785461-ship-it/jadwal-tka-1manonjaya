@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jadwal TKA SMP Manonjaya</title>
+    <title>Jadwal TKA SMP Manonjaya - Revisi</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -35,6 +35,13 @@
                         <circle cx="12" cy="12" r="10"/>
                         <polyline points="12 6 12 12 16 14" />
                     </React.Fragment>
+                ),
+                info: (
+                    <React.Fragment>
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                    </React.Fragment>
                 )
             };
             return (
@@ -47,23 +54,31 @@
         const NAMA_KELAS = ["9A", "9B", "9C", "9D", "9E", "9F", "9G", "9H", "9I", "9J", "9K"];
         const GURU_MTK = ["Pa Ali", "Bu Dede", "Bu Yuni", "Bu Lenie", "Pa Idik", "Pa Dadang"];
         const GURU_INDO = ["Bu Elis", "Bu Imas", "Bu Nendah", "Bu Noneng", "Bu Hana", "Pa Yadi"];
-        
         const SEMUA_GURU = [...new Set([...GURU_MTK, ...GURU_INDO])].sort();
         
-        // Batasan Tanggal Sesuai Request
         const START_DATE = new Date(2026, 1, 23); // 23 Feb 2026
         const END_DATE = new Date(2026, 2, 12);   // 12 Maret 2026
+        const LIBUR_PELATIHAN = new Date(2026, 2, 3); // 3 Maret 2026
 
         function App() {
             const [selectedDate, setSelectedDate] = useState(new Date(2026, 1, 23));
             const [selectedGuru, setSelectedGuru] = useState("");
 
+            const isLibur = (date) => {
+                const day = date.getDay();
+                const isWeekendOrJumat = (day === 0 || day === 6 || day === 5);
+                const d1 = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+                const d2 = new Date(LIBUR_PELATIHAN.getFullYear(), LIBUR_PELATIHAN.getMonth(), LIBUR_PELATIHAN.getDate()).getTime();
+                return isWeekendOrJumat || d1 === d2;
+            };
+
             const getWorkDayIndex = (targetDate) => {
                 let count = 0;
                 let current = new Date(START_DATE);
-                while (current < targetDate) {
-                    const day = current.getDay();
-                    if (day !== 0 && day !== 6 && day !== 5) {
+                const targetTime = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()).getTime();
+                
+                while (new Date(current.getFullYear(), current.getMonth(), current.getDate()).getTime() < targetTime) {
+                    if (!isLibur(current)) {
                         count++;
                     }
                     current.setDate(current.getDate() + 1);
@@ -72,6 +87,8 @@
             };
 
             const jadwalHariIni = useMemo(() => {
+                if (isLibur(selectedDate)) return [];
+
                 const dayOffset = getWorkDayIndex(selectedDate);
                 
                 return NAMA_KELAS.map((kelas, i) => {
@@ -103,20 +120,13 @@
 
             const changeDate = (direction) => {
                 let newDate = new Date(selectedDate);
-                let found = false;
-                while (!found) {
-                    newDate.setDate(newDate.getDate() + direction);
-                    
-                    // Cek batasan START_DATE dan END_DATE
-                    if (newDate < START_DATE || newDate > END_DATE) return;
-                    
-                    const day = newDate.getDay();
-                    if (day !== 0 && day !== 5 && day !== 6) {
-                        found = true;
-                    }
-                }
+                newDate.setDate(newDate.getDate() + direction);
+                if (newDate < START_DATE || newDate > END_DATE) return;
                 setSelectedDate(newDate);
             };
+
+            const isPelatihanHariIni = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()).getTime() === 
+                                      new Date(LIBUR_PELATIHAN.getFullYear(), LIBUR_PELATIHAN.getMonth(), LIBUR_PELATIHAN.getDate()).getTime();
 
             return (
                 <div className="min-h-screen p-4 md:p-8 bg-slate-50 text-slate-900 font-sans">
@@ -135,7 +145,7 @@
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
                             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-4 text-center">Navigasi Hari Kerja</span>
+                                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-4 text-center">Navigasi Tanggal</span>
                                 <div className="flex items-center justify-between bg-slate-50 rounded-xl p-2 border border-slate-100">
                                     <button 
                                         onClick={() => changeDate(-1)} 
@@ -144,9 +154,11 @@
                                     >
                                         <Icon name="chevron-left" />
                                     </button>
-                                    <div className="text-center">
-                                        <div className="font-bold text-slate-800">{formatDate(selectedDate)}</div>
-                                        <div className="text-[10px] text-indigo-500 font-bold uppercase tracking-tight">Senin - Kamis Saja</div>
+                                    <div className="text-center px-2">
+                                        <div className="font-bold text-slate-800 text-sm md:text-base">{formatDate(selectedDate)}</div>
+                                        <div className="text-[10px] text-indigo-500 font-bold uppercase tracking-tight">
+                                            {isPelatihanHariIni ? "Kegiatan Pelatihan Guru" : "Senin - Kamis"}
+                                        </div>
                                     </div>
                                     <button 
                                         onClick={() => changeDate(1)} 
@@ -156,18 +168,16 @@
                                         <Icon name="chevron-right" />
                                     </button>
                                 </div>
-                                <div className="mt-3 text-center">
-                                    <span className="text-[9px] text-slate-400 font-medium italic">Batas: 23 Feb - 12 Mar 2026</span>
-                                </div>
                             </div>
 
                             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-4 text-center">Filter Berdasarkan Guru</span>
                                 <div className="relative">
                                     <select 
-                                        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none text-slate-800 font-bold focus:ring-2 focus:ring-indigo-500 transition-all appearance-none cursor-pointer"
+                                        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none text-slate-800 font-bold focus:ring-2 focus:ring-indigo-500 transition-all appearance-none cursor-pointer disabled:opacity-50"
                                         value={selectedGuru}
                                         onChange={(e) => setSelectedGuru(e.target.value)}
+                                        disabled={isPelatihanHariIni || isLibur(selectedDate)}
                                     >
                                         <option value="">Semua Guru Mengajar</option>
                                         {SEMUA_GURU.map(g => <option key={g} value={g}>{g}</option>)}
@@ -179,42 +189,61 @@
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredJadwal.length > 0 ? (
-                                filteredJadwal.map((item) => (
-                                    <div key={`${selectedDate.getTime()}-${item.kelas}`} className="group bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden hover:border-indigo-300 hover:shadow-xl transition-all duration-300">
-                                        <div className="bg-slate-900 text-white px-6 py-3 flex justify-between items-center">
-                                            <span className="font-black italic tracking-tighter text-lg uppercase">Kelas {item.kelas}</span>
-                                            <div className="bg-indigo-500/20 text-indigo-300 p-1 rounded-md">
-                                                <Icon name="map-pin" size={14} />
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="p-6 space-y-4">
-                                            <div className={`relative p-4 rounded-2xl border-l-4 transition-all ${item.sesi1.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
-                                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Sesi 1 • 09:30</div>
-                                                <div className="font-extrabold text-slate-800 text-base">{item.sesi1.nama}</div>
-                                                <div className="text-xs font-medium text-slate-500 italic">{item.sesi1.mapel}</div>
-                                            </div>
-
-                                            <div className="flex justify-center -my-2 opacity-20">
-                                                <div className="h-4 w-[2px] bg-slate-300"></div>
-                                            </div>
-
-                                            <div className={`relative p-4 rounded-2xl border-l-4 transition-all ${item.sesi2.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
-                                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Sesi 2 • 11:00</div>
-                                                <div className="font-extrabold text-slate-800 text-base">{item.sesi2.nama}</div>
-                                                <div className="text-xs font-medium text-slate-500 italic">{item.sesi2.mapel}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-slate-300">
-                                    <p className="text-slate-400 font-medium">Tidak ada jadwal ditemukan untuk filter ini.</p>
+                        {isPelatihanHariIni ? (
+                            <div className="bg-amber-50 border-2 border-dashed border-amber-200 rounded-3xl p-12 text-center">
+                                <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 text-amber-600 rounded-full mb-4">
+                                    <Icon name="info" size={32} />
                                 </div>
-                            )}
-                        </div>
+                                <h2 className="text-2xl font-bold text-amber-800 mb-2">Tidak Ada Pembelajaran</h2>
+                                <p className="text-amber-700 max-w-md mx-auto">
+                                    Sehubungan dengan adanya <strong>Kegiatan Pelatihan bagi Guru</strong>, jadwal KBM untuk hari ini ditiadakan.
+                                </p>
+                                <div className="mt-6 inline-block bg-white px-4 py-2 rounded-full text-xs font-bold text-amber-600 shadow-sm border border-amber-100">
+                                    Jadwal ini dipindahkan ke hari Rabu, 4 Maret 2026.
+                                </div>
+                            </div>
+                        ) : isLibur(selectedDate) ? (
+                            <div className="bg-slate-100 border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center">
+                                <p className="text-slate-500 font-medium tracking-tight">Hari ini adalah hari libur (Jumat/Weekend).</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {filteredJadwal.length > 0 ? (
+                                    filteredJadwal.map((item) => (
+                                        <div key={`${selectedDate.getTime()}-${item.kelas}`} className="group bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden hover:border-indigo-300 hover:shadow-xl transition-all duration-300">
+                                            <div className="bg-slate-900 text-white px-6 py-3 flex justify-between items-center">
+                                                <span className="font-black italic tracking-tighter text-lg uppercase">Kelas {item.kelas}</span>
+                                                <div className="bg-indigo-500/20 text-indigo-300 p-1 rounded-md">
+                                                    <Icon name="map-pin" size={14} />
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="p-6 space-y-4">
+                                                <div className={`relative p-4 rounded-2xl border-l-4 transition-all ${item.sesi1.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
+                                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Sesi 1 • 09:30</div>
+                                                    <div className="font-extrabold text-slate-800 text-base">{item.sesi1.nama}</div>
+                                                    <div className="text-xs font-medium text-slate-500 italic">{item.sesi1.mapel}</div>
+                                                </div>
+
+                                                <div className="flex justify-center -my-2 opacity-20">
+                                                    <div className="h-4 w-[2px] bg-slate-300"></div>
+                                                </div>
+
+                                                <div className={`relative p-4 rounded-2xl border-l-4 transition-all ${item.sesi2.mapel === 'Matematika' ? 'bg-blue-50 border-blue-500' : 'bg-emerald-50 border-emerald-500'}`}>
+                                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Sesi 2 • 11:00</div>
+                                                    <div className="font-extrabold text-slate-800 text-base">{item.sesi2.nama}</div>
+                                                    <div className="text-xs font-medium text-slate-500 italic">{item.sesi2.mapel}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-slate-300">
+                                        <p className="text-slate-400 font-medium">Tidak ada jadwal ditemukan untuk filter ini.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         <div className="mt-12 bg-slate-900 rounded-3xl p-8 text-white shadow-inner">
                             <div className="flex items-center gap-3 mb-6">
@@ -237,7 +266,7 @@
                         </div>
 
                         <p className="text-center text-slate-400 text-[10px] mt-8 font-medium uppercase tracking-widest">
-                            Sistem Penjadwalan Otomatis v2.6 • Batas: 12 Maret 2026
+                            Sistem Penjadwalan Otomatis v2.6.1 • Update: 3 Maret Libur Pelatihan
                         </p>
                     </div>
                 </div>
